@@ -1,0 +1,25 @@
+# NaviPlaylist Docker Compose 示例
+# 用法: docker compose up -d
+
+services:
+  navi-playlist:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      NAVI_URL: "http://navidrome:4533"   # Navidrome 服务地址（同 compose 内可填服务名）
+      NAVI_USER: "admin"
+      NAVI_PASS: "your_password"
+    restart: unless-stopped
+
+  # 可选：如需本地测试，可配合 Navidrome 一起启动
+  # navidrome:
+  #   image: deluan/navidrome:latest
+  #   ports:
+  #     - "4533:4533"
+  #   environment:
+  #     ND_SCANINTERVAL: "1m"
+  #     ND_LOGLEVEL: "info"
+  #   volumes:
+  #     - ./navidrome-data:/data
+  #     - /path/to/your/music:/music:ro

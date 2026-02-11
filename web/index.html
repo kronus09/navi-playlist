@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NaviPlaylist - 为 Navidrome 创建歌单</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Noto Sans SC', system-ui, sans-serif; }
+    .split-pane { min-height: 200px; }
+    .matched-item .song-title { color: #28a745; font-weight: 700; }
+    .matched-item .song-meta { color: #6c757d; font-size: 0.9em; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased">
+  <div class="min-h-screen max-w-7xl mx-auto px-4 py-8">
+    <header class="mb-10">
+      <h1 class="text-2xl font-semibold text-slate-800 tracking-tight"><span class="mr-2" aria-hidden="true">🎵</span>NaviPlaylist</h1>
+      <p class="text-slate-500 mt-1">从文本列表匹配 Navidrome 曲库，直接在服务端创建歌单</p>
+    </header>
+
+    <div class="grid lg:grid-cols-[minmax(280px,380px)_1fr] gap-8">
+      <!-- 左侧：输入区（收窄，为右侧留更多空间） -->
+      <section class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-2">歌单名称</label>
+          <input type="text" id="playlistName" placeholder="我的歌单"
+            class="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-slate-300 focus:border-slate-300 outline-none transition">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-600 mb-2">歌曲列表（每行：歌名 - 歌手）</label>
+          <textarea id="songList" rows="12" placeholder="夜曲 - 周杰伦&#10;稻香 - 周杰伦"
+            class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-slate-300 focus:border-slate-300 outline-none transition resize-y font-mono text-sm"></textarea>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <button id="btnSearch" class="px-5 py-2.5 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition font-medium">
+            开始匹配
+          </button>
+          <button id="btnGenerate" disabled class="px-5 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+            生成歌单
+          </button>
+          <button id="btnClear" class="px-5 py-2.5 border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-100 transition font-medium">
+            清空
+          </button>
+          <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+            <input type="checkbox" id="chkAutoSelect" class="rounded border-slate-300">
+            <span>若有同名歌曲，系统自动选择首项结果</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- 右侧：结果区（上下排列，占满剩余宽度） -->
+      <section class="space-y-4 min-w-0">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-slate-600">匹配结果</span>
+          <span id="progressText" class="text-sm text-slate-400"></span>
+        </div>
+        <div class="flex flex-col gap-4">
+          <div class="rounded-xl border border-slate-200 bg-white split-pane overflow-auto">
+            <div class="p-3 border-b border-slate-100 bg-slate-50/50 sticky top-0">
+              <span class="text-sm font-medium text-emerald-700">✓ 匹配成功</span>
+            </div>
+            <ul id="matchedList" class="p-3 space-y-1.5 text-sm"></ul>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-white split-pane overflow-auto">
+            <div class="p-3 border-b border-slate-100 bg-slate-50/50 sticky top-0">
+              <span class="text-sm font-medium text-red-600">✗ 缺失</span>
+            </div>
+            <ul id="missingList" class="p-3 space-y-1 text-sm text-red-600"></ul>
+          </div>
+        </div>
+        <p id="generateHint" class="text-sm text-slate-400 hidden">确认无误后点击「生成歌单」</p>
+      </section>
+    </div>
+
+    <!-- 多选弹窗 -->
+    <div id="modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50" style="display: none;">
+      <div class="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
+        <div class="p-4 border-b border-slate-200">
+          <h3 class="font-medium text-slate-800">选择匹配的歌曲</h3>
+          <p id="modalQuery" class="text-sm text-slate-500 mt-1"></p>
+        </div>
+        <ul id="modalList" class="p-4 overflow-auto flex-1 space-y-2"></ul>
+        <div class="p-4 border-t border-slate-200 flex justify-end gap-2">
+          <button id="modalSkip" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">跳过</button>
+          <button id="modalCancel" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">取消</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+.git
+*.exe
+navi-playlist
+*.md
+.gitignore
