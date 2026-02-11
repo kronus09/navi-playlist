@@ -3,7 +3,7 @@ name: 🐳 Build & Push Docker Image to GHCR
 on:
   push:
     branches: [main]
-  workflow_dispatch:
+  workflow_dispatch:  # 允许手动触发
 
 env:
   REGISTRY: ghcr.io
@@ -35,5 +35,3 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
