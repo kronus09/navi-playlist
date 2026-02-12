@@ -69,6 +69,8 @@ go run ./cmd/server
 ### Docker 运行
 
 ```bash
+git clone https://github.com/kronus09/navi-playlist.git
+
 docker compose up -d
 ```
 
@@ -97,7 +99,7 @@ docker compose up -d
        #   - ./config.yaml:/app/config.yaml  # 自定义配置
 ```
 **启动服务**
- ```
+ ```bash
 docker-compose up -d
  ```
 
