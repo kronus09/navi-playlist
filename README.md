@@ -48,7 +48,7 @@ NaviPlaylist 是一个轻量级工具，帮助你用「歌名 - 歌手」格式�
 - Go 1.21+
 - Navidrome 服务（支持 Subsonic API）
 
-### 本地运行
+### ⚙️ 本地运行
 
 **配置**
 
@@ -68,7 +68,7 @@ go run ./cmd/server
 
 默认监听 `http://localhost:8080`，可通过 `PORT` 环境变量修改端口。
 
-### Docker 运行
+### 🐳 Docker 运行
 
 ```bash
 git clone https://github.com/kronus09/navi-playlist.git
@@ -78,7 +78,7 @@ docker compose up -d
 
 访问 http://localhost:8080
 
-### 使用 Docker Compose（推荐）
+### 🐳 使用 Docker Compose（推荐）
 
 **创建 `docker-compose.yml` 文件**  
    在项目目录下创建文件，内容如下：
@@ -118,6 +118,6 @@ docker-compose up -d
 ⚠️ 如部署在公网，建议前置 Nginx 添加 HTTPS 和认证
 
 
-## 许可证
+## 📜 许可证
 
 MIT
