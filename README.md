@@ -93,7 +93,7 @@ docker compose up -d
        # volumes:
        #   - ./data:/app/data  # 持久化数据（如需）
        #   - ./config.yaml:/app/config.yaml  # 自定义配置
-
+```
 ---
 ###🔒 安全提示
 ✅ 镜像已通过 GitHub Actions 自动构建+签名
