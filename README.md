@@ -95,7 +95,7 @@ docker compose up -d
        #   - ./config.yaml:/app/config.yaml  # 自定义配置
 
 ---
-🔒 安全提示
+###🔒 安全提示
 ✅ 镜像已通过 GitHub Actions 自动构建+签名
 ✅ 镜像来源：ghcr.io/kronus09/navi-playlist（官方仓库）
 ✅ 无需 Docker Hub 账号 / Token（公开镜像免认证）
