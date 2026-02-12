@@ -1,4 +1,6 @@
-# NaviPlaylist
+# 🎵NaviPlaylist
+
+> 一款轻量级、高性能的音乐歌单管理工具
 
 从文本列表匹配 Navidrome 曲库，通过 **Subsonic API 直接在服务端创建歌单**，无需配置复杂的物理路径映射。
 
