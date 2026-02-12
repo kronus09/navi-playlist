@@ -97,7 +97,8 @@ docker compose up -d
        #   - ./config.yaml:/app/config.yaml  # 自定义配置
 ```
 **启动服务**
- ```docker-compose up -d
+ ```
+docker-compose up -d
  ```
 
 ---
