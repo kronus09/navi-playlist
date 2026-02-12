@@ -94,6 +94,9 @@ docker compose up -d
        #   - ./data:/app/data  # 持久化数据（如需）
        #   - ./config.yaml:/app/config.yaml  # 自定义配置
 ```
+**启动服务**
+docker-compose up -d
+
 ---
 
 ### 🔒 安全提示
