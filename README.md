@@ -72,6 +72,33 @@ docker compose up -d
 
 访问 http://localhost:8080
 
+### 使用 Docker Compose（推荐）
+
+**创建 `docker-compose.yml` 文件**  
+   在项目目录下创建文件，内容如下：
+
+   ```yaml
+
+   services:
+     navi-playlist:
+       image: ghcr.io/kronus09/navi-playlist:latest
+       container_name: navi-playlist
+       ports:
+         - "8080:8080"  # 主机端口:容器端口（按需修改左侧端口）
+       restart: always
+       # 可选配置（按需取消注释）：
+       # environment:
+       #   - TZ=Asia/Shanghai  # 设置时区
+       #   - APP_ENV=production
+       # volumes:
+       #   - ./data:/app/data  # 持久化数据（如需）
+       #   - ./config.yaml:/app/config.yaml  # 自定义配置
+
+🔒 安全提示
+✅ 镜像已通过 GitHub Actions 自动构建+签名
+✅ 镜像来源：ghcr.io/kronus09/navi-playlist（官方仓库）
+✅ 无需 Docker Hub 账号 / Token（公开镜像免认证）
+⚠️ 如部署在公网，建议前置 Nginx 添加 HTTPS 和认证
 ---
 
 ## 许可证
