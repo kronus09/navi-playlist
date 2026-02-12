@@ -58,7 +58,7 @@ cp .env.example .env
 
 或通过环境变量直接设置（参见 `.env.example` 中的说明）。
 
-### 本地运行
+**启动服务**
 
 ```bash
 go run ./cmd/server
