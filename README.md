@@ -48,7 +48,9 @@ NaviPlaylist 是一个轻量级工具，帮助你用「歌名 - 歌手」格式�
 - Go 1.21+
 - Navidrome 服务（支持 Subsonic API）
 
-### 本地运行配置
+### 本地运行
+
+**配置**
 
 复制 `.env.example` 为 `.env`，按需修改：
 
