@@ -16,15 +16,19 @@ import (
 
 // Handler 组合所有依赖
 type Handler struct {
-	navi   *navidrome.Client
-	webDir string
+	navi      *navidrome.Client
+	webDir    string
+	serverURL string
+	username  string
 }
 
 // New 创建 Handler
-func New(navi *navidrome.Client, webDir string) *Handler {
+func New(navi *navidrome.Client, webDir, serverURL, username string) *Handler {
 	return &Handler{
-		navi:   navi,
-		webDir: webDir,
+		navi:      navi,
+		webDir:    webDir,
+		serverURL: serverURL,
+		username:  username,
 	}
 }
 
@@ -55,6 +59,15 @@ type generateResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message,omitempty"`
 	Error   string `json:"error,omitempty"`
+}
+
+// 状态检测响应
+type statusResponse struct {
+	Connected bool   `json:"connected"`
+	Username  string `json:"username,omitempty"`
+	ServerURL string `json:"serverUrl,omitempty"` // 服务器地址（脱敏后）
+	Reason    string `json:"reason,omitempty"`    // auth_error, network_error, api_error
+	Message   string `json:"message,omitempty"`   // 用户友好的错误消息
 }
 
 // parseSongLine 解析 "歌名 - 歌手" 格式，返回 (歌名, 歌手)
@@ -92,7 +105,7 @@ func artistMatches(songArtist, inputArtist string) bool {
 }
 
 var (
-	reParen  = regexp.MustCompile(`\([^()]*\)`)
+	reParen   = regexp.MustCompile(`\([^()]*\)`)
 	reBracket = regexp.MustCompile(`\[[^\[\]]*\]`)
 )
 
@@ -145,11 +158,87 @@ func filterAndLog(songs []navidrome.Song, inputTitle, inputArtist string) []navi
 func (h *Handler) RegisterRoutes(r chi.Router) {
 	// API 优先匹配
 	r.Route("/api", func(r chi.Router) {
+		r.Get("/status", h.handleStatus)
 		r.Post("/search", h.handleSearch)
 		r.Post("/generate", h.handleGenerate)
 	})
 	// 静态文件：托管 web 目录（FileServer 会自动提供 index.html）
 	r.Handle("/*", http.FileServer(http.Dir(h.webDir)))
+}
+
+// maskServerURL 对服务器URL进行脱敏处理
+// 规则：保留前段，末尾4位用****替换
+func maskServerURL(urlStr string) string {
+	if urlStr == "" {
+		return ""
+	}
+
+	// 移除协议前缀
+	cleanURL := strings.TrimPrefix(urlStr, "http://")
+	cleanURL = strings.TrimPrefix(cleanURL, "https://")
+
+	// 移除端口号（如果有）
+	if idx := strings.LastIndex(cleanURL, ":"); idx > 0 {
+		// 检查:后面是否是数字（端口号）
+		portPart := cleanURL[idx+1:]
+		isPort := true
+		for _, ch := range portPart {
+			if ch < '0' || ch > '9' {
+				isPort = false
+				break
+			}
+		}
+		if isPort {
+			cleanURL = cleanURL[:idx]
+		}
+	}
+
+	// 如果URL长度小于等于4，直接返回
+	if len(cleanURL) <= 4 {
+		return cleanURL
+	}
+
+	// 保留前段，末尾4位用****替换
+	// 例如：192.168.1.100 -> 192.168.1.****
+	// example.com -> examp****
+	masked := cleanURL[:len(cleanURL)-4] + "****"
+	return masked
+}
+
+// handleStatus 处理服务器连接状态检测
+func (h *Handler) handleStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// 调用 Navidrome ping 测试连接
+	err := h.navi.Ping()
+
+	resp := statusResponse{
+		Connected: err == nil,
+	}
+
+	if err == nil {
+		// 连接成功，返回用户名和脱敏后的服务器地址
+		resp.Username = h.username
+		resp.ServerURL = maskServerURL(h.serverURL)
+	} else {
+		// 解析错误类型
+		errStr := err.Error()
+		if strings.Contains(errStr, "auth_error:") {
+			resp.Reason = "auth_error"
+			resp.Message = "用户名或密码错误"
+		} else if strings.Contains(errStr, "network_error:") {
+			resp.Reason = "network_error"
+			resp.Message = "无法连接服务器，请检查 URL"
+		} else {
+			resp.Reason = "api_error"
+			resp.Message = "服务器返回错误: " + errStr
+		}
+	}
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		log.Printf("编码状态响应失败: %v", err)
+		http.Error(w, "内部服务器错误", http.StatusInternalServerError)
+	}
 }
 
 // handleSearch 处理搜索请求，流式返回每个条目的搜索结果

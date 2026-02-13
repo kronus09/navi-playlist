@@ -23,6 +23,21 @@
   const btnClear = document.getElementById('btnClear');
   const chkAutoSelect = document.getElementById('chkAutoSelect');
 
+  // 连接状态相关元素
+  const connectionStatusEl = document.getElementById('connectionStatus');
+  const statusTextEl = document.getElementById('statusText');
+  const statusDetailsEl = document.getElementById('statusDetails');
+  const usernameDisplayEl = document.getElementById('usernameDisplay');
+  const btnRetry = document.getElementById('btnRetry');
+  const connectionErrorHintEl = document.getElementById('connectionErrorHint');
+  const errorMessageEl = document.getElementById('errorMessage');
+  const errorSuggestionEl = document.getElementById('errorSuggestion');
+  const searchButtonHintEl = document.getElementById('searchButtonHint');
+
+  // 连接状态
+  let isConnected = false;
+  let connectionChecked = false;
+
   // 格式化显示：歌名（绿色加粗） - 歌手（灰色小号） 【专辑名（灰色小号）】
   function formatSongDisplayHtml(song) {
     const title = escapeHtml((song.title || '').trim());
@@ -32,12 +47,180 @@
     return `<span class="song-title">${title}</span>${meta}`;
   }
 
+  // 连接状态管理函数
+  function updateConnectionUI(connected, data) {
+    // 防御性编程：检查关键元素是否存在
+    if (!connectionStatusEl || !statusTextEl || !btnRetry || !connectionErrorHintEl ||
+        !btnSearch || !searchButtonHintEl || !statusDetailsEl || !usernameDisplayEl ||
+        !errorMessageEl || !errorSuggestionEl) {
+      console.error('updateConnectionUI: 缺少必要的DOM元素');
+      return;
+    }
+    
+    connectionChecked = true;
+    isConnected = connected;
+    
+    // 更新状态指示器
+    connectionStatusEl.classList.remove('status-connected', 'status-disconnected', 'status-checking');
+    
+    if (connected) {
+      // 连接成功
+      connectionStatusEl.classList.add('status-connected');
+      
+      // 构建状态文本：服务器已连接: [IP/域名脱敏]
+      let statusText = '🟢 服务器已连接';
+      if (data && data.serverUrl) {
+        // 服务器URL应该已经由后端脱敏处理
+        statusText += `: ${data.serverUrl}`;
+      }
+      statusTextEl.textContent = statusText;
+      
+      // 显示用户名（如果有）
+      if (data && data.username) {
+        usernameDisplayEl.textContent = `| 用户: ${data.username}`;
+        statusDetailsEl.classList.remove('hidden');
+      } else {
+        statusDetailsEl.classList.add('hidden');
+      }
+      
+      // 隐藏重试按钮和错误提示
+      btnRetry.classList.add('hidden');
+      connectionErrorHintEl.classList.add('hidden');
+      
+      // 启用搜索按钮
+      btnSearch.disabled = false;
+      searchButtonHintEl.classList.add('hidden');
+    } else {
+      // 连接失败
+      connectionStatusEl.classList.add('status-disconnected');
+      statusTextEl.textContent = '🔴 连接失败';
+      
+      // 显示错误详情
+      if (data && data.message) {
+        errorMessageEl.textContent = data.message;
+        statusDetailsEl.classList.remove('hidden');
+        usernameDisplayEl.textContent = data.message;
+      }
+      
+      // 显示错误建议
+      if (data && data.reason === 'auth_error') {
+        errorSuggestionEl.textContent = '请检查服务器地址、用户名和密码等配置是否正确';
+      } else if (data && data.reason === 'network_error') {
+        errorSuggestionEl.textContent = '请检查网络连接和服务器URL是否正确';
+      } else if (data && data.reason === 'timeout_error') {
+        errorSuggestionEl.textContent = '连接超时，请检查网络或服务器状态';
+      } else if (data && data.reason === 'init_error') {
+        errorSuggestionEl.textContent = '初始化失败，请刷新页面重试';
+      } else {
+        errorSuggestionEl.textContent = '请检查服务器配置和网络连接';
+      }
+      
+      // 显示重试按钮和错误提示
+      btnRetry.classList.remove('hidden');
+      connectionErrorHintEl.classList.remove('hidden');
+      
+      // 禁用搜索按钮并显示提示
+      btnSearch.disabled = true;
+      searchButtonHintEl.classList.remove('hidden');
+    }
+  }
+
+  // 检测连接状态
+    async function checkConnectionStatus() {
+      try {
+        // 设置超时（5秒）
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch('/api/status', {
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        
+        if (data.connected) {
+          updateConnectionUI(true, data);
+        } else {
+          updateConnectionUI(false, data);
+        }
+      } catch (error) {
+        console.error('检测连接状态失败:', error);
+        let reason = 'network_error';
+        let message = '无法连接服务器，请检查 URL';
+        
+        if (error.name === 'AbortError') {
+          reason = 'timeout_error';
+          message = '连接超时，请检查网络或服务器状态';
+        } else if (error.message.includes('Failed to fetch')) {
+          reason = 'network_error';
+          message = '无法连接到服务器，请检查 URL 和网络连接';
+        }
+        
+        updateConnectionUI(false, {
+          reason: reason,
+          message: message
+        });
+      }
+    }
+
+  // 初始化连接状态检测
+  async function initConnectionCheck() {
+    // 防御性编程：检查元素是否存在
+    if (!connectionStatusEl || !statusTextEl) {
+      console.error('DOM元素未找到，无法初始化连接检测');
+      return;
+    }
+    
+    // 设置检查状态
+    connectionStatusEl.classList.add('status-checking');
+    statusTextEl.textContent = '检测连接状态...';
+    
+    // 设置超时兜底：如果10秒内没有完成，强制切换到失败状态
+    const timeoutId = setTimeout(() => {
+      console.warn('连接检测超时，强制切换到失败状态');
+      if (connectionStatusEl && statusTextEl) {
+        updateConnectionUI(false, {
+          reason: 'timeout_error',
+          message: '连接检测超时'
+        });
+      }
+    }, 10000);
+    
+    try {
+      // 执行检测
+      await checkConnectionStatus();
+    } catch (error) {
+      // 如果checkConnectionStatus内部抛出未捕获的错误，这里作为最后的安全网
+      console.error('初始化连接检测失败:', error);
+      updateConnectionUI(false, {
+        reason: 'init_error',
+        message: '初始化连接检测失败'
+      });
+    } finally {
+      // 清除超时定时器
+      clearTimeout(timeoutId);
+    }
+    
+    // 设置定期检测（每5分钟一次）
+    setInterval(checkConnectionStatus, 5 * 60 * 1000);
+  }
+
   // 状态：匹配结果 [{ query, status, song? }]
   let matchResults = [];
   let selectedSongs = []; // 最终选中的歌曲（含多选时用户选的）
 
   // 开始匹配
   btnSearch.addEventListener('click', async () => {
+    // 检查连接状态
+    if (!isConnected) {
+      alert('请先修复服务器连接后再开始匹配');
+      return;
+    }
+    
     const raw = songListEl.value.trim();
     if (!raw) {
       alert('请输入歌曲列表');
@@ -235,4 +418,42 @@
       btnGenerate.disabled = false;
     }
   });
+
+  // 重试按钮点击事件
+  btnRetry.addEventListener('click', async () => {
+    btnRetry.disabled = true;
+    statusTextEl.textContent = '重新检测中...';
+    await checkConnectionStatus();
+    btnRetry.disabled = false;
+  });
+
+  // 页面加载时初始化连接检测 - 单一事件监听器
+  function initializeApp() {
+    // 防御性编程：检查关键元素是否存在
+    const requiredElements = [
+      connectionStatusEl, statusTextEl, btnRetry,
+      statusDetailsEl, usernameDisplayEl, connectionErrorHintEl,
+      errorMessageEl, errorSuggestionEl, btnSearch, searchButtonHintEl
+    ];
+    
+    const missingElements = requiredElements.filter(el => !el);
+    if (missingElements.length > 0) {
+      console.error('缺少必要的DOM元素:', missingElements);
+      // 如果关键元素缺失，延迟重试
+      setTimeout(initializeApp, 100);
+      return;
+    }
+    
+    // 所有元素都存在，开始初始化
+    console.log('DOM加载完成，开始初始化连接检测');
+    initConnectionCheck();
+  }
+
+  // 使用单一事件监听器
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+  } else {
+    // DOM已经加载完成，直接执行
+    setTimeout(initializeApp, 0);
+  }
 })();

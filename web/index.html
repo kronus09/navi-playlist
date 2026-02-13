@@ -14,13 +14,61 @@
     .split-pane { min-height: 200px; }
     .matched-item .song-title { color: #28a745; font-weight: 700; }
     .matched-item .song-meta { color: #6c757d; font-size: 0.9em; }
+    
+    /* 连接状态样式 */
+    .status-connected {
+      background-color: #f0fdf4 !important;
+      border-color: #bbf7d0 !important;
+    }
+    .status-disconnected {
+      background-color: #fef2f2 !important;
+      border-color: #fecaca !important;
+    }
+    .status-checking {
+      background-color: #fffbeb !important;
+      border-color: #fde68a !important;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased">
   <div class="min-h-screen max-w-7xl mx-auto px-4 py-8">
     <header class="mb-10">
-      <h1 class="text-2xl font-semibold text-slate-800 tracking-tight"><span class="mr-2" aria-hidden="true">🎵</span>NaviPlaylist</h1>
-      <p class="text-slate-500 mt-1">从文本列表匹配 Navidrome 曲库，直接在服务端创建歌单</p>
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-semibold text-slate-800 tracking-tight"><span class="mr-2" aria-hidden="true">🎵</span>NaviPlaylist</h1>
+          <p class="text-slate-500 mt-1">从文本列表匹配 Navidrome 曲库，直接在服务端创建歌单</p>
+          
+          <!-- 连接状态显示 - 移动到标题正下方 -->
+          <div id="connectionStatus" class="mt-4 flex flex-col gap-2 px-4 py-3 rounded-lg border transition-colors duration-300 bg-slate-50 border-slate-200 w-fit">
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2">
+                <span id="statusText" class="text-sm font-medium">检测连接状态...</span>
+              </div>
+              <div id="statusDetails" class="text-sm text-slate-600 hidden">
+                <span id="usernameDisplay"></span>
+              </div>
+              <button id="btnRetry" class="text-sm bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg transition-all duration-200 font-medium shadow hover:shadow-md hidden">
+                重试
+              </button>
+            </div>
+            
+            <!-- 连接错误提示 - 移动到重试按钮下方独立一行 -->
+            <div id="connectionErrorHint" class="p-2 rounded bg-red-50 border border-red-200 hidden">
+              <div class="flex items-start gap-2">
+                <span class="text-red-500 text-xs">⚠</span>
+                <div class="flex-1">
+                  <p class="text-xs text-red-800 font-medium" id="errorMessage">连接失败</p>
+                  <p class="text-xs text-red-600 mt-0.5" id="errorSuggestion">请检查服务器地址、用户名和密码等配置是否正确</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </header>
 
     <div class="grid lg:grid-cols-[minmax(280px,380px)_1fr] gap-8">
@@ -36,10 +84,15 @@
           <textarea id="songList" rows="12" placeholder="夜曲 - 周杰伦&#10;稻香 - 周杰伦"
             class="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-slate-300 focus:border-slate-300 outline-none transition resize-y font-mono text-sm"></textarea>
         </div>
-        <div class="flex flex-wrap items-center gap-3">
-          <button id="btnSearch" class="px-5 py-2.5 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition font-medium">
-            开始匹配
-          </button>
+        <div class="flex flex-wrap items-start gap-3">
+          <div class="flex flex-col items-start">
+            <button id="btnSearch" disabled class="px-5 py-2.5 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+              开始匹配
+            </button>
+            <div id="searchButtonHint" class="mt-1 text-xs text-slate-500 whitespace-nowrap">
+              请先修复服务器连接
+            </div>
+          </div>
           <button id="btnGenerate" disabled class="px-5 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed">
             生成歌单
           </button>

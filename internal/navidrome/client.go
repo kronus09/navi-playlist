@@ -27,10 +27,10 @@ type Song struct {
 // 歌曲信息在 <song> 标签的属性中（title, artist, album 等），attr 正确从属性读取
 // 支持：直接 <song>、<child>、以及 <match><song/></match> 包装
 type searchResult3 struct {
-	XMLName   xml.Name `xml:"searchResult3"`
-	Songs     []Song   `xml:"song"`
-	Children  []Song   `xml:"child"`
-	Matches   []struct {
+	XMLName  xml.Name `xml:"searchResult3"`
+	Songs    []Song   `xml:"song"`
+	Children []Song   `xml:"child"`
+	Matches  []struct {
 		Song Song `xml:"song"`
 	} `xml:"match"`
 }
@@ -117,6 +117,16 @@ func (c *Client) Search(query string) ([]Song, error) {
 	return songs, nil
 }
 
+// pingResponse ping.view 响应结构
+type pingResponse struct {
+	XMLName xml.Name `xml:"subsonic-response"`
+	Status  string   `xml:"status,attr"`
+	Error   *struct {
+		Code    int    `xml:"code,attr"`
+		Message string `xml:"message,attr"`
+	} `xml:"error"`
+}
+
 // createPlaylistResponse createPlaylist 响应结构（用于解析错误）
 type createPlaylistResponse struct {
 	XMLName xml.Name `xml:"subsonic-response"`
@@ -141,6 +151,8 @@ func (c *Client) CreatePlaylist(name string, songIds []string) error {
 	q.Set("v", apiVersion)
 	q.Set("c", clientName)
 	q.Set("name", name)
+	// 添加 shared=true 参数确保歌单对所有用户可见
+	q.Set("shared", "true")
 	for _, id := range songIds {
 		q.Add("songId", id)
 	}
@@ -170,5 +182,57 @@ func (c *Client) CreatePlaylist(name string, songIds []string) error {
 	if sr.Status != "ok" && sr.Error != nil {
 		return fmt.Errorf("Subsonic API 错误: %s", sr.Error.Message)
 	}
+	return nil
+}
+
+// Ping 调用 ping.view 测试连接和认证
+// 返回 nil 表示成功，否则返回错误信息
+// 错误类型：
+//   - 网络错误：无法连接服务器
+//   - 认证错误：错误码 40（用户名或密码错误）
+//   - 其他 API 错误
+func (c *Client) Ping() error {
+	u, err := url.Parse(c.baseURL + "/rest/ping.view")
+	if err != nil {
+		return err
+	}
+	q := u.Query()
+	q.Set("u", c.user)
+	q.Set("p", c.password)
+	q.Set("v", apiVersion)
+	q.Set("c", clientName)
+	u.RawQuery = q.Encode()
+
+	fullURL := u.String()
+	log.Printf("发起连接测试请求: %s", fullURL)
+
+	resp, err := c.client.Get(fullURL)
+	if err != nil {
+		// 网络错误：无法连接服务器
+		return fmt.Errorf("network_error: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("读取响应失败: %w", err)
+	}
+
+	log.Printf("ping 响应: %s", string(body))
+
+	var pr pingResponse
+	if err := xml.Unmarshal(body, &pr); err != nil {
+		return fmt.Errorf("解析 ping 响应失败: %w", err)
+	}
+
+	if pr.Status != "ok" && pr.Error != nil {
+		// 认证错误：错误码 40
+		if pr.Error.Code == 40 {
+			return fmt.Errorf("auth_error: %s", pr.Error.Message)
+		}
+		// 其他 API 错误
+		return fmt.Errorf("api_error: %s", pr.Error.Message)
+	}
+
 	return nil
 }

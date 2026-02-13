@@ -41,15 +41,29 @@ func main() {
 
 	// 初始化组件
 	naviClient := navidrome.NewClient(cfg.NaviURL, cfg.NaviUser, cfg.NaviPass)
-	h := handlers.New(naviClient, webDir)
+	h := handlers.New(naviClient, webDir, cfg.NaviURL, cfg.NaviUser)
 
 	r := chi.NewRouter()
+
+	// CORS中间件
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// 设置CORS头
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 			w.Header().Set("X-Content-Type-Options", "nosniff")
+
+			// 处理预检请求
+			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+
 			next.ServeHTTP(w, r)
 		})
 	})
+
 	h.RegisterRoutes(r)
 
 	addr := ":8080"
