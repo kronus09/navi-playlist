@@ -20,15 +20,17 @@ type Handler struct {
 	webDir    string
 	serverURL string
 	username  string
+	version   string
 }
 
 // New 创建 Handler
-func New(navi *navidrome.Client, webDir, serverURL, username string) *Handler {
+func New(navi *navidrome.Client, webDir, serverURL, username, version string) *Handler {
 	return &Handler{
 		navi:      navi,
 		webDir:    webDir,
 		serverURL: serverURL,
 		username:  username,
+		version:   version,
 	}
 }
 
@@ -68,6 +70,7 @@ type statusResponse struct {
 	ServerURL string `json:"serverUrl,omitempty"` // 服务器地址（脱敏后）
 	Reason    string `json:"reason,omitempty"`    // auth_error, network_error, api_error
 	Message   string `json:"message,omitempty"`   // 用户友好的错误消息
+	Version   string `json:"version,omitempty"`   // 应用版本号
 }
 
 // parseSongLine 解析 "歌名 - 歌手" 格式，返回 (歌名, 歌手)
@@ -214,6 +217,7 @@ func (h *Handler) handleStatus(w http.ResponseWriter, r *http.Request) {
 
 	resp := statusResponse{
 		Connected: err == nil,
+		Version:   h.version, // 始终包含版本号
 	}
 
 	if err == nil {

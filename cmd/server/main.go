@@ -15,6 +15,9 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// Version 应用版本号
+const Version = "1.2.0"
+
 func main() {
 	// 加载配置
 	cfg, err := config.Load()
@@ -41,7 +44,7 @@ func main() {
 
 	// 初始化组件
 	naviClient := navidrome.NewClient(cfg.NaviURL, cfg.NaviUser, cfg.NaviPass)
-	h := handlers.New(naviClient, webDir, cfg.NaviURL, cfg.NaviUser)
+	h := handlers.New(naviClient, webDir, cfg.NaviURL, cfg.NaviUser, Version)
 
 	r := chi.NewRouter()
 

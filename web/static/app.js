@@ -33,6 +33,26 @@
   const errorMessageEl = document.getElementById('errorMessage');
   const errorSuggestionEl = document.getElementById('errorSuggestion');
   const searchButtonHintEl = document.getElementById('searchButtonHint');
+  const btnCopyMissing = document.getElementById('btnCopyMissing');
+  const versionBadgeEl = document.getElementById('versionBadge');
+  const btnAIGuide = document.getElementById('btnAIGuide');
+  const aiGuideModal = document.getElementById('aiGuideModal');
+  const aiGuideClose = document.getElementById('aiGuideClose');
+  const footerVersionEl = document.getElementById('footerVersion');
+  const mobileVersionEl = document.getElementById('mobileVersion');
+
+  // 加载状态控制函数
+  function setLoadingState(loading) {
+    if (!btnSearch) return;
+    
+    if (loading) {
+      btnSearch.classList.add('btn-loading');
+      btnSearch.disabled = true;
+    } else {
+      btnSearch.classList.remove('btn-loading');
+      btnSearch.disabled = false;
+    }
+  }
 
   // 连接状态
   let isConnected = false;
@@ -81,6 +101,13 @@
         statusDetailsEl.classList.remove('hidden');
       } else {
         statusDetailsEl.classList.add('hidden');
+      }
+      
+      // 更新版本号（如果后端返回了版本号）
+      if (data && data.version && versionBadgeEl) {
+        versionBadgeEl.textContent = `v${data.version}`;
+        if (footerVersionEl) footerVersionEl.textContent = data.version;
+        if (mobileVersionEl) mobileVersionEl.textContent = data.version;
       }
       
       // 隐藏重试按钮和错误提示
@@ -232,7 +259,8 @@
       return;
     }
 
-    btnSearch.disabled = true;
+    // 设置加载状态
+    setLoadingState(true);
     matchResults = [];
     selectedSongs = [];
     matchedListEl.innerHTML = '';
@@ -304,8 +332,17 @@
               appendMissing(ev.query);
             }
           } else if (ev.type === 'done') {
-            progressTextEl.textContent = `完成：匹配 ${selectedSongs.length} 首，缺失 ${matchResults.filter(r => r.status === 'missing').length} 首`;
+            const missingCount = matchResults.filter(r => r.status === 'missing').length;
+            progressTextEl.textContent = `完成：匹配 ${selectedSongs.length} 首，缺失 ${missingCount} 首`;
             generateHintEl.classList.remove('hidden');
+            
+            // 显示或隐藏复制失败项按钮
+            if (missingCount > 0) {
+              btnCopyMissing.classList.remove('hidden');
+            } else {
+              btnCopyMissing.classList.add('hidden');
+            }
+            
             if (selectedSongs.length > 0) {
               btnGenerate.disabled = false;
             }
@@ -316,7 +353,8 @@
       progressTextEl.textContent = '错误：' + err.message;
       console.error(err);
     } finally {
-      btnSearch.disabled = false;
+      // 清除加载状态
+      setLoadingState(false);
     }
   });
 
@@ -368,6 +406,36 @@
     missingListEl.appendChild(li);
   }
 
+  // 复制所有失败项到剪贴板
+  function copyMissingItems() {
+    const missingItems = matchResults
+      .filter(r => r.status === 'missing')
+      .map(r => r.query);
+    
+    if (missingItems.length === 0) {
+      alert('没有失败项可复制');
+      return;
+    }
+    
+    const text = missingItems.join('\n');
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        // 临时改变按钮文本显示复制成功
+        const originalText = btnCopyMissing.textContent;
+        btnCopyMissing.textContent = '✅ 已复制';
+        btnCopyMissing.classList.add('bg-emerald-100', 'text-emerald-700');
+        
+        setTimeout(() => {
+          btnCopyMissing.textContent = originalText;
+          btnCopyMissing.classList.remove('bg-emerald-100', 'text-emerald-700');
+        }, 2000);
+      })
+      .catch(err => {
+        console.error('复制失败:', err);
+        alert('复制失败，请手动复制');
+      });
+  }
+
   function escapeHtml(s) {
     const div = document.createElement('div');
     div.textContent = s;
@@ -385,7 +453,12 @@
     progressTextEl.textContent = '';
     generateHintEl.classList.add('hidden');
     btnGenerate.disabled = true;
+    // 隐藏复制按钮
+    btnCopyMissing.classList.add('hidden');
   });
+
+  // 复制失败项按钮点击事件
+  btnCopyMissing.addEventListener('click', copyMissingItems);
 
   // 生成歌单
   btnGenerate.addEventListener('click', async () => {
@@ -425,6 +498,52 @@
     statusTextEl.textContent = '重新检测中...';
     await checkConnectionStatus();
     btnRetry.disabled = false;
+  });
+
+  // AI指南按钮点击事件
+  btnAIGuide.addEventListener('click', () => {
+    aiGuideModal.classList.remove('hidden');
+    aiGuideModal.style.display = 'flex';
+  });
+
+  // AI指南关闭按钮
+  aiGuideClose.addEventListener('click', () => {
+    aiGuideModal.classList.add('hidden');
+    aiGuideModal.style.display = 'none';
+  });
+
+  // AI指南模板复制功能
+  document.querySelectorAll('.copy-template').forEach(button => {
+    button.addEventListener('click', (e) => {
+      const templateId = e.target.getAttribute('data-template');
+      const templateEl = document.getElementById(templateId);
+      if (!templateEl) return;
+      
+      const text = templateEl.textContent;
+      navigator.clipboard.writeText(text)
+        .then(() => {
+          const originalText = e.target.textContent;
+          e.target.textContent = '✅ 已复制';
+          e.target.classList.add('bg-emerald-100', 'text-emerald-700');
+          
+          setTimeout(() => {
+            e.target.textContent = originalText;
+            e.target.classList.remove('bg-emerald-100', 'text-emerald-700');
+          }, 2000);
+        })
+        .catch(err => {
+          console.error('复制模板失败:', err);
+          alert('复制失败，请手动选择并复制文本');
+        });
+    });
+  });
+
+  // 点击Modal外部关闭
+  aiGuideModal.addEventListener('click', (e) => {
+    if (e.target === aiGuideModal) {
+      aiGuideModal.classList.add('hidden');
+      aiGuideModal.style.display = 'none';
+    }
   });
 
   // 页面加载时初始化连接检测 - 单一事件监听器
