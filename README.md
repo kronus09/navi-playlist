@@ -4,6 +4,7 @@
 
 从文本列表匹配 Navidrome 曲库，通过 **Subsonic API 直接在服务端创建歌单**，无需配置复杂的物理路径映射。
 
+>本项目使用Subsonic createPlaylist API，原理上 道理鱼 也适用，请自行测试！
 ---
 
 ## 项目简介
