@@ -32,7 +32,6 @@
   const connectionErrorHintEl = document.getElementById('connectionErrorHint');
   const errorMessageEl = document.getElementById('errorMessage');
   const errorSuggestionEl = document.getElementById('errorSuggestion');
-  const searchButtonHintEl = document.getElementById('searchButtonHint');
   const btnCopyMissing = document.getElementById('btnCopyMissing');
   const versionBadgeEl = document.getElementById('versionBadge');
   const btnAIGuide = document.getElementById('btnAIGuide');
@@ -71,7 +70,7 @@
   function updateConnectionUI(connected, data) {
     // 防御性编程：检查关键元素是否存在
     if (!connectionStatusEl || !statusTextEl || !btnRetry || !connectionErrorHintEl ||
-        !btnSearch || !searchButtonHintEl || !statusDetailsEl || !usernameDisplayEl ||
+        !btnSearch || !statusDetailsEl || !usernameDisplayEl ||
         !errorMessageEl || !errorSuggestionEl) {
       console.error('updateConnectionUI: 缺少必要的DOM元素');
       return;
@@ -116,7 +115,6 @@
       
       // 启用搜索按钮
       btnSearch.disabled = false;
-      searchButtonHintEl.classList.add('hidden');
     } else {
       // 连接失败
       connectionStatusEl.classList.add('status-disconnected');
@@ -148,7 +146,6 @@
       
       // 禁用搜索按钮并显示提示
       btnSearch.disabled = true;
-      searchButtonHintEl.classList.remove('hidden');
     }
   }
 
@@ -265,7 +262,7 @@
     selectedSongs = [];
     matchedListEl.innerHTML = '';
     missingListEl.innerHTML = '';
-    progressTextEl.textContent = '';
+    progressTextEl.innerHTML = '<span>匹配 <span class="text-green-600 font-bold">0</span> 首，缺失 <span class="text-red-600 font-bold">0</span> 首</span>';
     generateHintEl.classList.add('hidden');
     btnGenerate.disabled = true;
 
@@ -333,7 +330,7 @@
             }
           } else if (ev.type === 'done') {
             const missingCount = matchResults.filter(r => r.status === 'missing').length;
-            progressTextEl.textContent = `完成：匹配 ${selectedSongs.length} 首，缺失 ${missingCount} 首`;
+            progressTextEl.innerHTML = `<span>匹配 <span class="text-green-600 font-bold">${selectedSongs.length}</span> 首，缺失 <span class="text-red-600 font-bold">${missingCount}</span> 首</span>`;
             generateHintEl.classList.remove('hidden');
             
             // 显示或隐藏复制失败项按钮
@@ -401,8 +398,38 @@
 
   function appendMissing(query) {
     const li = document.createElement('li');
-    li.className = 'text-red-600';
-    li.textContent = query;
+    li.className = 'flex items-center justify-between group hover:bg-red-50 px-2 rounded';
+    
+    // 解析查询字符串：格式为 "歌曲名 - 歌手名"
+    let songName = query;
+    let artistName = '';
+    
+    const separatorIndex = query.indexOf(' - ');
+    if (separatorIndex !== -1) {
+      songName = query.substring(0, separatorIndex).trim();
+      artistName = query.substring(separatorIndex + 3).trim();
+    }
+    
+    // 创建格式化文本：歌曲名（红色） - 歌手名（灰色）
+    const textSpan = document.createElement('span');
+    textSpan.className = 'truncate flex-1';
+    
+    if (artistName) {
+      // 格式：[歌曲名] - [歌手名]，歌曲名红色，歌手名灰色
+      textSpan.innerHTML = `<span class="text-red-500 font-medium">${escapeHtml(songName)}</span> - <span class="text-slate-600">${escapeHtml(artistName)}</span>`;
+    } else {
+      // 如果没有分隔符，整个文本显示为红色
+      textSpan.innerHTML = `<span class="text-red-500 font-medium">${escapeHtml(songName)}</span>`;
+    }
+    
+    const copyButton = document.createElement('button');
+    copyButton.className = 'copy-missing-item ml-2 text-slate-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-slate-100';
+    copyButton.innerHTML = '📋';
+    copyButton.title = '复制此项';
+    copyButton.setAttribute('data-query', query);
+    
+    li.appendChild(textSpan);
+    li.appendChild(copyButton);
     missingListEl.appendChild(li);
   }
 
@@ -450,7 +477,7 @@
     selectedSongs = [];
     matchedListEl.innerHTML = '';
     missingListEl.innerHTML = '';
-    progressTextEl.textContent = '';
+    progressTextEl.innerHTML = '<span>匹配 <span class="text-green-600 font-bold">0</span> 首，缺失 <span class="text-red-600 font-bold">0</span> 首</span>';
     generateHintEl.classList.add('hidden');
     btnGenerate.disabled = true;
     // 隐藏复制按钮
@@ -546,13 +573,42 @@
     }
   });
 
+  // 缺失项复制图标点击事件（事件委托）
+  missingListEl.addEventListener('click', (e) => {
+    if (e.target.classList.contains('copy-missing-item') ||
+        e.target.closest('.copy-missing-item')) {
+      const button = e.target.classList.contains('copy-missing-item') ?
+                     e.target : e.target.closest('.copy-missing-item');
+      const query = button.getAttribute('data-query');
+      
+      if (!query) return;
+      
+      navigator.clipboard.writeText(query)
+        .then(() => {
+          // 视觉反馈：图标闪烁
+          const originalHTML = button.innerHTML;
+          button.innerHTML = '✅';
+          button.classList.add('text-green-500');
+          
+          setTimeout(() => {
+            button.innerHTML = originalHTML;
+            button.classList.remove('text-green-500');
+          }, 1000);
+        })
+        .catch(err => {
+          console.error('复制失败:', err);
+          alert('复制失败，请手动复制');
+        });
+    }
+  });
+
   // 页面加载时初始化连接检测 - 单一事件监听器
   function initializeApp() {
     // 防御性编程：检查关键元素是否存在
     const requiredElements = [
       connectionStatusEl, statusTextEl, btnRetry,
       statusDetailsEl, usernameDisplayEl, connectionErrorHintEl,
-      errorMessageEl, errorSuggestionEl, btnSearch, searchButtonHintEl
+      errorMessageEl, errorSuggestionEl, btnSearch
     ];
     
     const missingElements = requiredElements.filter(el => !el);
