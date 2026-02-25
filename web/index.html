@@ -59,27 +59,29 @@
     
     /* 响应式高度调整 */
     @media (max-width: 1024px) {
-      .lg\:grid-cols-2 {
-        grid-template-columns: 1fr;
+      .flex-col.lg\:flex-row {
+        flex-direction: column !important;
       }
-      section.flex-col.h-full {
-        height: auto;
+      /* 确保在手机上预览区也有足够的高度，而不是缩成一团 */
+      .flex-1.flex.flex-col.min-h-0 {
+        min-height: 400px !important; 
+      } 
+      #songList {
+        height: 250px !important;
       }
     }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased flex flex-col min-h-screen">
   <div class="max-w-6xl mx-auto px-4 py-6 flex-1 w-full">
-    <!-- 页面头部 - 极简风格 -->
     <header class="mb-8 text-center">
       <div class="flex flex-col items-center justify-center">
         <div class="flex items-center gap-3 mb-1">
           <h1 class="text-4xl font-bold text-slate-800"><span class="mr-2" aria-hidden="true">🎵</span>NaviPlaylist</h1>
-          <span id="versionBadge" class="text-xs font-medium bg-blue-100 text-blue-700 px-2 py-1 rounded-full border border-blue-200">v1.0.0</span>
+          <span id="versionBadge" class="text-xs font-medium bg-blue-100 text-blue-700 px-2 py-1 rounded-full border border-blue-200">v1.2.2</span>
         </div>
         <p class="text-slate-500 text-sm mb-4 max-w-2xl mx-auto">从文本列表匹配 Navidrome 曲库，直接在服务端创建歌单</p>
         
-        <!-- 精致连接状态条 -->
         <div id="connectionStatus" class="inline-flex flex-col items-center gap-2 px-4 py-2 rounded-full border transition-colors duration-300 bg-white border-slate-200">
           <div class="flex items-center gap-3">
             <div class="flex items-center gap-2">
@@ -93,7 +95,6 @@
             </button>
           </div>
           
-          <!-- 连接错误提示 -->
           <div id="connectionErrorHint" class="p-2 rounded bg-red-50 border border-red-200 hidden mt-1">
             <div class="flex items-start gap-2">
               <span class="text-red-500 text-xs">⚠</span>
@@ -107,9 +108,7 @@
       </div>
     </header>
 
-    <!-- 核心功能区 - 左右等宽等高布局 -->
     <div class="flex flex-col lg:flex-row gap-8 mb-6 items-stretch">
-      <!-- 左侧：创建你的歌单 -->
       <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col flex-1">
         <div class="p-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between min-h-[60px]">
           <h3 class="text-base font-semibold text-slate-800">创建你的歌单</h3>
@@ -159,7 +158,6 @@
         </div>
       </div>
 
-      <!-- 右侧：匹配结果预览 -->
       <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col flex-1">
         <div class="p-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between min-h-[60px]">
           <h3 class="text-base font-semibold text-slate-800">匹配结果预览</h3>
@@ -168,9 +166,7 @@
           </div>
         </div>
         <div class="flex-1 flex flex-col min-h-0">
-          <!-- 合并的结果列表容器 - 使用flex平分高度 -->
           <div class="flex-1 flex flex-col min-h-0">
-            <!-- 匹配成功区域 - 使用h-[1px] flex-grow解决flex内部滚动 -->
             <div class="h-[1px] flex-grow flex flex-col min-h-0 border-b border-slate-100">
               <div class="p-3 border-b border-slate-100 bg-emerald-50/50 sticky top-0 flex items-center justify-between">
                 <span class="text-xs font-medium text-emerald-700 flex items-center gap-1.5">
@@ -181,7 +177,6 @@
               <ul id="matchedList" class="p-3 text-sm overflow-y-auto flex-1 flex flex-col"></ul>
             </div>
             
-            <!-- 缺失区域 - 使用h-[1px] flex-grow解决flex内部滚动 -->
             <div class="h-[1px] flex-grow flex flex-col min-h-0">
               <div class="p-3 border-b border-slate-100 bg-red-50/50 sticky top-0 flex items-center justify-between">
                 <span class="text-xs font-medium text-red-600 flex items-center gap-1.5">
@@ -199,7 +194,6 @@
       </div>
     </div>
 
-    <!-- 精致化AI灵感实验室 -->
     <div class="bg-blue-50/30 rounded-lg border border-slate-200 mb-6">
       <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
@@ -214,7 +208,6 @@
       </div>
     </div>
     
-    <!-- 页面内页脚 -->
     <div class="mt-6 pt-4 border-t border-slate-200">
       <div class="flex flex-col items-center justify-center text-center">
         <div class="text-xs text-slate-500">
@@ -226,13 +219,12 @@
               </svg>
               GitHub Repo
             </a> |
-            v<span id="footerVersion">1.0.0</span>
+            v<span id="footerVersion">1.2.2</span>
           </p>
         </div>
       </div>
     </div>
 
-    <!-- 多选弹窗 -->
     <div id="modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50" style="display: none;">
       <div class="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
         <div class="p-4 border-b border-slate-200">
@@ -247,7 +239,6 @@
       </div>
     </div>
 
-    <!-- AI指南弹窗 -->
     <div id="aiGuideModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50" style="display: none;">
       <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[85vh] overflow-hidden flex flex-col">
         <div class="p-6 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-indigo-50">
@@ -265,7 +256,6 @@
         </div>
         
         <div class="p-6 overflow-auto flex-1 space-y-6">
-          <!-- 模板1 -->
           <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
             <div class="flex items-center justify-between mb-3">
               <h4 class="font-medium text-slate-800">🎵 通用歌单生成</h4>
@@ -273,11 +263,11 @@
                 📋 一键复制
               </button>
             </div>
-            <pre class="text-sm text-slate-700 bg-white p-3 rounded border border-slate-200 overflow-x-auto font-mono whitespace-pre-wrap" id="template1">请为我生成一个包含20首经典华语流行歌曲的歌单，格式为"歌名 - 歌手"，每行一首。
-要求：包含周杰伦、林俊杰、孙燕姿、王菲等歌手的代表作，兼顾不同年代和风格。</pre>
+            <pre class="text-sm text-slate-700 bg-white p-3 rounded border border-slate-200 overflow-x-auto font-mono whitespace-pre-wrap" id="template1">请为我生成一个包含20首经典华语流行歌曲的歌单，格式为"歌名 - 歌手"，不要序号，每行一首。
+要求：包含周杰伦、林俊杰、孙燕姿、王菲等歌手的代表作，兼顾不同年代和风格。
+请把歌单放在代码块中以便于复制。</pre>
           </div>
           
-          <!-- 模板2 -->
           <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
             <div class="flex items-center justify-between mb-3">
               <h4 class="font-medium text-slate-800">🎸 特定风格/主题</h4>
@@ -286,10 +276,10 @@
               </button>
             </div>
             <pre class="text-sm text-slate-700 bg-white p-3 rounded border border-slate-200 overflow-x-auto font-mono whitespace-pre-wrap" id="template2">请生成一个"90年代怀旧金曲"主题的歌单，包含15首歌曲。
-要求：每行格式为"歌名 - 歌手"，优先选择1990-1999年间发行的经典歌曲，涵盖港台和内地歌手。</pre>
+要求：每行格式为"歌名 - 歌手"，不要序号，优先选择1990-1999年间发行的经典歌曲，涵盖港台和内地歌手。
+请把歌单放在代码块中以便于复制。</pre>
           </div>
           
-          <!-- 模板3 -->
           <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
             <div class="flex items-center justify-between mb-3">
               <h4 class="font-medium text-slate-800">🌙 情绪/场景歌单</h4>
@@ -298,10 +288,10 @@
               </button>
             </div>
             <pre class="text-sm text-slate-700 bg-white p-3 rounded border border-slate-200 overflow-x-auto font-mono whitespace-pre-wrap" id="template3">请创建一个适合"深夜工作/学习"时听的专注歌单，包含12首歌曲。
-要求：纯音乐或轻音乐优先，节奏舒缓，无人声或人声轻柔，每行格式为"歌名 - 歌手/作曲家"。</pre>
+要求：纯音乐或轻音乐优先，节奏舒缓，无人声或人声轻柔，每行格式为"歌名 - 歌手/作曲家"，不要序号。
+请把歌单放在代码块中以便于复制。</pre>
           </div>
           
-          <!-- 模板4 -->
           <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
             <div class="flex items-center justify-between mb-3">
               <h4 class="font-medium text-slate-800">🚗 旅行/驾驶歌单</h4>
@@ -310,7 +300,8 @@
               </button>
             </div>
             <pre class="text-sm text-slate-700 bg-white p-3 rounded border border-slate-200 overflow-x-auto font-mono whitespace-pre-wrap" id="template4">请设计一个"公路旅行"主题的驾驶歌单，包含18首歌曲。
-要求：节奏明快、旋律动感，适合长途驾驶时提神，涵盖中外流行、摇滚、电子等风格，格式为"歌名 - 歌手"。</pre>
+要求：节奏明快、旋律动感，适合长途驾驶时提神，涵盖中外流行、摇滚、电子等风格，格式为"歌名 - 歌手"，不要序号。
+请把歌单放在代码块中以便于复制。</pre>
           </div>
         </div>
         

@@ -433,36 +433,6 @@
     missingListEl.appendChild(li);
   }
 
-  // 复制所有失败项到剪贴板
-  function copyMissingItems() {
-    const missingItems = matchResults
-      .filter(r => r.status === 'missing')
-      .map(r => r.query);
-    
-    if (missingItems.length === 0) {
-      alert('没有失败项可复制');
-      return;
-    }
-    
-    const text = missingItems.join('\n');
-    navigator.clipboard.writeText(text)
-      .then(() => {
-        // 临时改变按钮文本显示复制成功
-        const originalText = btnCopyMissing.textContent;
-        btnCopyMissing.textContent = '✅ 已复制';
-        btnCopyMissing.classList.add('bg-emerald-100', 'text-emerald-700');
-        
-        setTimeout(() => {
-          btnCopyMissing.textContent = originalText;
-          btnCopyMissing.classList.remove('bg-emerald-100', 'text-emerald-700');
-        }, 2000);
-      })
-      .catch(err => {
-        console.error('复制失败:', err);
-        alert('复制失败，请手动复制');
-      });
-  }
-
   function escapeHtml(s) {
     const div = document.createElement('div');
     div.textContent = s;
@@ -483,9 +453,6 @@
     // 隐藏复制按钮
     btnCopyMissing.classList.add('hidden');
   });
-
-  // 复制失败项按钮点击事件
-  btnCopyMissing.addEventListener('click', copyMissingItems);
 
   // 生成歌单
   btnGenerate.addEventListener('click', async () => {
@@ -539,31 +506,58 @@
     aiGuideModal.style.display = 'none';
   });
 
-  // AI指南模板复制功能
-  document.querySelectorAll('.copy-template').forEach(button => {
-    button.addEventListener('click', (e) => {
-      const templateId = e.target.getAttribute('data-template');
-      const templateEl = document.getElementById(templateId);
-      if (!templateEl) return;
-      
-      const text = templateEl.textContent;
+
+  // 安全的复制函数 - 兼容非HTTPS环境和Docker
+  function safeCopy(text, callback) {
+    // 检查 clipboard API 是否可用且在安全上下文中
+    if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(text)
         .then(() => {
-          const originalText = e.target.textContent;
-          e.target.textContent = '✅ 已复制';
-          e.target.classList.add('bg-emerald-100', 'text-emerald-700');
-          
-          setTimeout(() => {
-            e.target.textContent = originalText;
-            e.target.classList.remove('bg-emerald-100', 'text-emerald-700');
-          }, 2000);
+          if (callback) callback();
         })
         .catch(err => {
-          console.error('复制模板失败:', err);
-          alert('复制失败，请手动选择并复制文本');
+          console.warn('Clipboard API 失败，降级到 execCommand:', err);
+          // 降级方案
+          fallbackCopy(text, callback);
         });
-    });
-  });
+    } else {
+      // 降级方案：使用 document.execCommand
+      fallbackCopy(text, callback);
+    }
+  }
+
+  // 降级复制方案：通过隐藏 textarea
+  function fallbackCopy(text, callback) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-9999px";
+    textArea.style.top = "0";
+    textArea.style.width = "1px";
+    textArea.style.height = "1px";
+    textArea.style.padding = "0";
+    textArea.style.border = "none";
+    textArea.style.outline = "none";
+    textArea.style.boxShadow = "none";
+    textArea.style.background = "transparent";
+    
+    document.body.appendChild(textArea);
+    textArea.select();
+    
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        if (callback) callback();
+      } else {
+        throw new Error('execCommand 复制失败');
+      }
+    } catch (err) {
+      console.error('复制失败:', err);
+      alert('复制失败，请手动选择并复制文本');
+    } finally {
+      document.body.removeChild(textArea);
+    }
+  }
 
   // 点击Modal外部关闭
   aiGuideModal.addEventListener('click', (e) => {
@@ -583,24 +577,68 @@
       
       if (!query) return;
       
-      navigator.clipboard.writeText(query)
-        .then(() => {
-          // 视觉反馈：图标闪烁
-          const originalHTML = button.innerHTML;
-          button.innerHTML = '✅';
-          button.classList.add('text-green-500');
-          
-          setTimeout(() => {
-            button.innerHTML = originalHTML;
-            button.classList.remove('text-green-500');
-          }, 1000);
-        })
-        .catch(err => {
-          console.error('复制失败:', err);
-          alert('复制失败，请手动复制');
-        });
+      safeCopy(query, () => {
+        // 视觉反馈：图标闪烁
+        const originalHTML = button.innerHTML;
+        button.innerHTML = '✅';
+        button.classList.add('text-green-500');
+        
+        setTimeout(() => {
+          button.innerHTML = originalHTML;
+          button.classList.remove('text-green-500');
+        }, 1000);
+      });
     }
   });
+
+  // AI指南模板复制功能
+  document.querySelectorAll('.copy-template').forEach(button => {
+    button.addEventListener('click', (e) => {
+      const templateId = e.target.getAttribute('data-template');
+      const templateEl = document.getElementById(templateId);
+      if (!templateEl) return;
+      
+      const text = templateEl.textContent;
+      safeCopy(text, () => {
+        const originalText = e.target.textContent;
+        e.target.textContent = '✅ 已复制';
+        e.target.classList.add('bg-emerald-100', 'text-emerald-700');
+        
+        setTimeout(() => {
+          e.target.textContent = originalText;
+          e.target.classList.remove('bg-emerald-100', 'text-emerald-700');
+        }, 2000);
+      });
+    });
+  });
+
+  // 复制所有缺失项到剪贴板
+  function copyMissingItems() {
+    const missingItems = matchResults
+      .filter(r => r.status === 'missing')
+      .map(r => r.query);
+    
+    if (missingItems.length === 0) {
+      alert('没有失败项可复制');
+      return;
+    }
+    
+    const text = missingItems.join('\n');
+    safeCopy(text, () => {
+      // 临时改变按钮文本显示复制成功
+      const originalText = btnCopyMissing.textContent;
+      btnCopyMissing.textContent = '✅ 已复制';
+      btnCopyMissing.classList.add('bg-emerald-100', 'text-emerald-700');
+      
+      setTimeout(() => {
+        btnCopyMissing.textContent = originalText;
+        btnCopyMissing.classList.remove('bg-emerald-100', 'text-emerald-700');
+      }, 2000);
+    });
+  }
+
+  // 复制失败项按钮点击事件
+  btnCopyMissing.addEventListener('click', copyMissingItems);
 
   // 页面加载时初始化连接检测 - 单一事件监听器
   function initializeApp() {

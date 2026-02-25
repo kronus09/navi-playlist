@@ -16,7 +16,7 @@ import (
 )
 
 // Version 应用版本号
-const Version = "1.2.1"
+const Version = "1.2.2"
 
 func main() {
 	// 加载配置
