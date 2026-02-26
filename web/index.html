@@ -4,13 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NaviPlaylist - 为 Navidrome 创建歌单</title>
+  
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/tailwind.min.css">
+  
   <style>
-    body { font-family: 'Noto Sans SC', system-ui, sans-serif; }
+    /* 本地化：优先使用系统字体，确保无网络时瞬间加载 */
+    body { font-family: 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Source Han Sans CN', system-ui, sans-serif; }
+    
     .matched-item .song-title { color: #28a745; font-weight: 700; }
     .matched-item .song-meta { color: #6c757d; font-size: 0.9em; }
     
@@ -20,7 +21,7 @@
       border-color: #bbf7d0 !important;
     }
     .status-disconnected {
-      background-color: #fef2f2 !important;
+      background-color: #fff1f2 !important;
       border-color: #fecaca !important;
     }
     .status-checking {
@@ -62,7 +63,6 @@
       .flex-col.lg\:flex-row {
         flex-direction: column !important;
       }
-      /* 确保在手机上预览区也有足够的高度，而不是缩成一团 */
       .flex-1.flex.flex-col.min-h-0 {
         min-height: 400px !important; 
       } 
@@ -78,7 +78,7 @@
       <div class="flex flex-col items-center justify-center">
         <div class="flex items-center gap-3 mb-1">
           <h1 class="text-4xl font-bold text-slate-800"><span class="mr-2" aria-hidden="true">🎵</span>NaviPlaylist</h1>
-          <span id="versionBadge" class="text-xs font-medium bg-blue-100 text-blue-700 px-2 py-1 rounded-full border border-blue-200">v1.2.2</span>
+          <span id="versionBadge" class="text-xs font-medium bg-blue-100 text-blue-700 px-2 py-1 rounded-full border border-blue-200">v1.3.0</span>
         </div>
         <p class="text-slate-500 text-sm mb-4 max-w-2xl mx-auto">从文本列表匹配 Navidrome 曲库，直接在服务端创建歌单</p>
         
@@ -219,13 +219,13 @@
               </svg>
               GitHub Repo
             </a> |
-            v<span id="footerVersion">1.2.2</span>
+            v<span id="footerVersion">1.3.0</span>
           </p>
         </div>
       </div>
     </div>
 
-    <div id="modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50" style="display: none;">
+    <div id="modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
       <div class="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
         <div class="p-4 border-b border-slate-200">
           <h3 class="font-medium text-slate-800">选择匹配的歌曲</h3>
@@ -239,7 +239,7 @@
       </div>
     </div>
 
-    <div id="aiGuideModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50" style="display: none;">
+    <div id="aiGuideModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
       <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[85vh] overflow-hidden flex flex-col">
         <div class="p-6 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-indigo-50">
           <div class="flex items-center justify-between">
@@ -311,7 +311,6 @@
       </div>
     </div>
   </div>
-
 
   <script src="/static/app.js"></script>
 </body>
