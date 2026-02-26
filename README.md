@@ -92,7 +92,7 @@ services:
     ports:
       - "14533:8080" # 主机端口:容器端口（按需修改左侧端口）
     environment:
-      NAVI_URL: "http://192.168.0.12:4533"   # Navidrome 服务地址
+      NAVI_URL: "http:// *:4533"   # Navidrome 服务地址
       NAVI_USER: "admin"                     # Navidrome 用户名
       NAVI_PASS: "your_password"             # Navidrome 用户密码
     restart: unless-stopped
