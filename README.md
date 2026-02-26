@@ -85,25 +85,17 @@ docker compose up -d
    在项目目录下创建文件，内容如下：
 
    ```yaml
-
-   services:
-     navi-playlist:
-       image: ghcr.io/kronus09/navi-playlist:latest
-       container_name: navi-playlist
-       ports:
-         - "8080:8080"  # 主机端口:容器端口（按需修改左侧端口）
-     environment:
-       NAVI_URL: "http://navidrome:4533"   # Navidrome 服务地址
-       NAVI_USER: "admin"
-       NAVI_PASS: "your_password"
-     restart: always
-       # 可选配置（按需取消注释）：
-       # environment:
-       #   - TZ=Asia/Shanghai  # 设置时区
-       #   - APP_ENV=production
-       # volumes:
-       #   - ./data:/app/data  # 持久化数据（如需）
-       #   - ./config.yaml:/app/config.yaml  # 自定义配置
+services:
+  navi-playlist:
+    image: ghcr.io/kronus09/navi-playlist:latest
+    container_name: navi-playlist
+    ports:
+      - "14533:8080" # 主机端口:容器端口（按需修改左侧端口）
+    environment:
+      NAVI_URL: "http://192.168.0.12:4533"   # Navidrome 服务地址
+      NAVI_USER: "admin"                     # Navidrome 用户名
+      NAVI_PASS: "your_password"             # Navidrome 用户密码
+    restart: unless-stopped
 ```
 **启动服务**
  ```bash
