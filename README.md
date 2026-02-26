@@ -92,7 +92,11 @@ docker compose up -d
        container_name: navi-playlist
        ports:
          - "8080:8080"  # 主机端口:容器端口（按需修改左侧端口）
-       restart: always
+     environment:
+       NAVI_URL: "http://navidrome:4533"   # Navidrome 服务地址
+       NAVI_USER: "admin"
+       NAVI_PASS: "your_password"
+     restart: always
        # 可选配置（按需取消注释）：
        # environment:
        #   - TZ=Asia/Shanghai  # 设置时区
